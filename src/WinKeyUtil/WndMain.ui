@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>xWndMainClass</class>
+ <widget class="QMainWindow" name="xWndMainClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>460</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>WinKeyUtil</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="WndMain.qrc">
+    <normaloff>:/xWndMain/res/WinKeyUtil.ico</normaloff>:/xWndMain/res/WinKeyUtil.ico</iconset>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="layoutMain">
+    <item>
+     <widget class="QGroupBox" name="grpKeys">
+      <property name="title">
+       <string>Keys</string>
+      </property>
+      <layout class="QGridLayout" name="layoutKeys">
+       <item row="0" column="0" colspan="2">
+        <widget class="QCheckBox" name="chkVolumeKey">
+         <property name="text">
+          <string>Volume Key (R-Ctrl + R-Shift + Up/Down)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="chkAutoShift">
+         <property name="text">
+          <string>Auto Shift, min repeat count</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="spinMinRepeat">
+         <property name="minimum">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QCheckBox" name="chkMouseJump">
+         <property name="text">
+          <string>Mouse Jump (Ctrl + Alt + Shift + 1..9)</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpReceiver">
+      <property name="title">
+       <string>Receiver</string>
+      </property>
+      <layout class="QGridLayout" name="layoutReceiver">
+       <item row="0" column="0" colspan="4">
+        <widget class="QCheckBox" name="chkReceiver">
+         <property name="text">
+          <string>Volume Key controls Receiver</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblHost">
+         <property name="text">
+          <string>Host</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="edtHost"/>
+       </item>
+       <item row="1" column="2">
+        <widget class="QComboBox" name="cmbZone">
+         <item>
+          <property name="text">
+           <string>Main Zone</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Zone 2</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QLabel" name="lblVolume">
+         <property name="text">
+          <string>-</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="4">
+        <layout class="QHBoxLayout" name="layoutReceiverButtons">
+         <item>
+          <widget class="QPushButton" name="btnVolumeUp">
+           <property name="text">
+            <string>Vol +</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnVolumeDown">
+           <property name="text">
+            <string>Vol -</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnPowerOn">
+           <property name="text">
+            <string>Power On</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="btnPowerOff">
+           <property name="text">
+            <string>Standby</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpWOL">
+      <property name="title">
+       <string>Wake on LAN (R-Ctrl + R-Shift + R-Alt + \)</string>
+      </property>
+      <layout class="QGridLayout" name="layoutWOL">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblMAC">
+         <property name="text">
+          <string>MAC</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="edtMAC">
+         <property name="placeholderText">
+          <string>00:11:22:33:44:55</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2" rowspan="2">
+        <widget class="QPushButton" name="btnWakeUp">
+         <property name="text">
+          <string>Wake Up</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="lblBroadcast">
+         <property name="text">
+          <string>Broadcast</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="edtBroadcast"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="grpGenerator">
+      <property name="title">
+       <string>Key Generator (R-Ctrl + R-Shift + R-Alt + [ / ])</string>
+      </property>
+      <layout class="QHBoxLayout" name="layoutGenerator">
+       <item>
+        <widget class="QCheckBox" name="chkGenerate">
+         <property name="text">
+          <string>Send VolDn key when idle for</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spinInterval">
+         <property name="suffix">
+          <string> sec</string>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>86400</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="spacer">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="layoutBottom">
+      <item>
+       <spacer name="spacerBottom">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnQuit">
+        <property name="text">
+         <string>Quit</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="WndMain.qrc"/>
+ </resources>
+ <connections/>
+</ui>

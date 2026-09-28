@@ -1,0 +1,13 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/[ Solution Items ]/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+    <File Path="vcpkg.json" />
+  </Folder>
+  <Project Path="src\WinKeyUtil\WinKeyUtil.vcxproj" Id="4b969072-d0ac-4212-9e4c-c62c91338ff0" />
+</Solution>

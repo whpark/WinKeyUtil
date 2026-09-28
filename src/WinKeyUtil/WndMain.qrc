@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="xWndMain">
+        <file>res/WinKeyUtil.ico</file>
+    </qresource>
+</RCC>
