@@ -268,7 +268,7 @@ void xWndMain::ShowAndActivate() {
 void xWndMain::Quit() {
 	m_bQuit = true;
 	close();
-	qApp->quit();
+	//qApp->quit();
 }
 
 bool xWndMain::IsWindowsLocked() {
@@ -284,18 +284,20 @@ bool xWndMain::IsWindowsLocked() {
 
 void xWndMain::closeEvent(QCloseEvent* event) {
 #ifdef _DEBUG
+	m_bQuit = true;
 #else
+	// Shift + close button : quit app instead of minimizing to tray
+	if (QGuiApplication::queryKeyboardModifiers() & Qt::ShiftModifier)
+		m_bQuit = true;
+#endif
 	if (!m_bQuit and m_tray.isVisible()) {
 		// minimize to tray
 		hide();
 		event->ignore();
 		return;
 	}
-#endif
 	SaveSettings();
 	QMainWindow::closeEvent(event);
-#ifdef _DEBUG
 	qApp->quit();
-#endif
 }
 
