@@ -41,6 +41,23 @@ xWndMain::xWndMain(QWidget* parent) : QMainWindow(parent) {
 	});
 	connect(&m_timerGenerator, &QTimer::timeout, this, [] { keyhook::SendKey(VK_VOLUME_DOWN, 0); });
 
+	// IME Indicator
+	auto applyIme = [this] { ApplyImeIndicator(); SaveSettings(); };
+	connect(ui.chkImeIndicator, &QCheckBox::toggled, this, applyIme);
+	connect(ui.chkImeShowEnglish, &QCheckBox::toggled, this, applyIme);
+	connect(ui.spinImeOpacity, &QSpinBox::valueChanged, this, applyIme);
+	connect(ui.spinImeInterval, &QSpinBox::valueChanged, this, applyIme);
+	connect(ui.spinImeX, &QSpinBox::valueChanged, this, applyIme);
+	connect(ui.spinImeY, &QSpinBox::valueChanged, this, applyIme);
+	connect(ui.btnImeColor, &QPushButton::clicked, this, [this, applyIme] {
+		auto color = QColorDialog::getColor(m_colorIme, this, "IME Indicator Background");
+		if (!color.isValid())
+			return;
+		m_colorIme = color;
+		applyIme();
+	});
+	ApplyImeIndicator();
+
 	connect(ui.btnQuit, &QPushButton::clicked, this, &xWndMain::Quit);
 
 	// Tray
@@ -102,6 +119,18 @@ void xWndMain::LoadSettings() {
 
 	ui.spinInterval->setValue(m_reg.value("generator/Interval", 230).toInt());
 	m_timerGenerator.setInterval(ui.spinInterval->value() * 1000);
+
+	QSignalBlocker b7(ui.chkImeIndicator), b8(ui.spinImeOpacity), b9(ui.spinImeInterval), b10(ui.spinImeX), b11(ui.spinImeY);
+	QSignalBlocker b12(ui.chkImeShowEnglish);
+	ui.chkImeIndicator->setChecked(m_reg.value("ime/Enabled", true).toBool());
+	ui.chkImeShowEnglish->setChecked(m_reg.value("ime/ShowEnglish", true).toBool());
+	m_colorIme = QColor::fromString(m_reg.value("ime/Background", "#000080").toString());
+	if (!m_colorIme.isValid())
+		m_colorIme = QColor(0, 0, 128);
+	ui.spinImeOpacity->setValue(m_reg.value("ime/Opacity", 80).toInt());
+	ui.spinImeInterval->setValue(m_reg.value("ime/Interval", 100).toInt());
+	ui.spinImeX->setValue(m_reg.value("ime/OffsetX", 0).toInt());
+	ui.spinImeY->setValue(m_reg.value("ime/OffsetY", 2).toInt());
 }
 
 void xWndMain::SaveSettings() {
@@ -115,6 +144,24 @@ void xWndMain::SaveSettings() {
 	m_reg.setValue("wol/MAC", ui.edtMAC->text().trimmed());
 	m_reg.setValue("wol/Broadcast", ui.edtBroadcast->text().trimmed());
 	m_reg.setValue("generator/Interval", ui.spinInterval->value());
+	m_reg.setValue("ime/Enabled", ui.chkImeIndicator->isChecked());
+	m_reg.setValue("ime/ShowEnglish", ui.chkImeShowEnglish->isChecked());
+	m_reg.setValue("ime/Background", m_colorIme.name());
+	m_reg.setValue("ime/Opacity", ui.spinImeOpacity->value());
+	m_reg.setValue("ime/Interval", ui.spinImeInterval->value());
+	m_reg.setValue("ime/OffsetX", ui.spinImeX->value());
+	m_reg.setValue("ime/OffsetY", ui.spinImeY->value());
+}
+
+void xWndMain::ApplyImeIndicator() {
+	ui.btnImeColor->setText(m_colorIme.name());
+	ui.btnImeColor->setStyleSheet(QString("background-color: %1; color: %2;").arg(m_colorIme.name(), m_colorIme.lightness() < 128 ? "white" : "black"));
+	m_ime.SetBackground(m_colorIme);
+	m_ime.SetOpacity(ui.spinImeOpacity->value() / 100.0);
+	m_ime.SetInterval(ui.spinImeInterval->value());
+	m_ime.SetShowEnglish(ui.chkImeShowEnglish->isChecked());
+	m_ime.SetOffset({ ui.spinImeX->value(), ui.spinImeY->value() });
+	m_ime.SetEnabled(ui.chkImeIndicator->isChecked());
 }
 
 void xWndMain::OnHookEvent(keyhook::eEvent e) {
@@ -210,12 +257,19 @@ void xWndMain::Quit() {
 }
 
 void xWndMain::closeEvent(QCloseEvent* event) {
+#ifdef _DEBUG
+#else
 	if (!m_bQuit and m_tray.isVisible()) {
 		// minimize to tray
 		hide();
 		event->ignore();
 		return;
 	}
+#endif
 	SaveSettings();
 	QMainWindow::closeEvent(event);
+#ifdef _DEBUG
+	qApp->quit();
+#endif
 }
+

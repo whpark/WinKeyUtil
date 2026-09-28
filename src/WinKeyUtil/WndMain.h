@@ -9,6 +9,7 @@
 #include "KeyHook.h"
 #include "Receiver.h"
 #include "NotifyBox.h"
+#include "ImeIndicator.h"
 #include "TaskQueue.h"
 
 class xWndMain : public QMainWindow {
@@ -24,6 +25,8 @@ protected:
 	QSystemTrayIcon m_tray;
 	xReceiver m_receiver;
 	xNotifyBox m_box;
+	xImeIndicator m_ime;
+	QColor m_colorIme{0, 0, 128};
 	QTimer m_timerGenerator;
 	bool m_bQuit{};
 	xTaskQueue m_worker;    // receiver network I/O. last member : joined first
@@ -37,6 +40,7 @@ protected:
 	void OnReceiverVolume(std::optional<int> volume);
 	void WakeOnLan();
 	void SetGenerator(bool bOn);
+	void ApplyImeIndicator();
 	void ShowAndActivate();
 	void Quit();
 

@@ -52,6 +52,9 @@
     <ClCompile Include="NotifyBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ImeIndicator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="KeyHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -75,6 +78,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="NotifyBox.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ImeIndicator.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

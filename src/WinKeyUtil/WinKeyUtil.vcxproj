@@ -129,11 +129,13 @@
     <QtUic Include="WndMain.ui" />
     <QtMoc Include="WndMain.h" />
     <QtMoc Include="NotifyBox.h" />
+    <QtMoc Include="ImeIndicator.h" />
     <ClInclude Include="KeyHook.h" />
     <ClInclude Include="Receiver.h" />
     <ClInclude Include="TaskQueue.h" />
     <ClCompile Include="WndMain.cpp" />
     <ClCompile Include="NotifyBox.cpp" />
+    <ClCompile Include="ImeIndicator.cpp" />
     <ClCompile Include="KeyHook.cpp" />
     <ClCompile Include="Receiver.cpp" />
     <ClCompile Include="main.cpp" />
