@@ -12,6 +12,42 @@ namespace {
 
 	using Microsoft::WRL::ComPtr;
 
+	// Diagnostics : trace of one poll. written to OutputDebugString (DebugView / VS Output) only when changed
+#ifdef _DEBUG
+	std::wstring g_trace;
+#endif
+
+	template < typename ... Args >
+	void Trace(std::wformat_string<Args...> fmt, Args&& ... args) {
+	#ifdef _DEBUG
+		g_trace += std::format(fmt, std::forward<Args>(args)...);
+		g_trace += L"\n";
+	#endif
+	}
+	void FlushTrace() {
+	#ifdef _DEBUG
+		static std::wstring s_last;
+		if (g_trace != s_last) {
+			OutputDebugStringW((L"[ImeIndicator] ----\n" + g_trace).c_str());
+			s_last = g_trace;
+		}
+		g_trace.clear();
+	#endif
+	}
+	std::wstring ToStr(RECT const& rc) {
+		return std::format(L"({},{})-({},{})", rc.left, rc.top, rc.right, rc.bottom);
+	}
+	std::wstring ToStr(std::optional<RECT> const& rc) {
+		return rc ? ToStr(*rc) : std::wstring(L"none");
+	}
+	std::wstring WndStr(HWND hwnd) {
+		if (!hwnd)
+			return L"null";
+		wchar_t buf[256]{};
+		GetClassNameW(hwnd, buf, (int)std::size(buf));
+		return std::format(L"{:#x} '{}'", (UINT_PTR)hwnd, buf);
+	}
+
 	// IME state of the foreground thread. nullopt : no caret
 	struct sCaretState {
 		RECT rcCaret{};	// screen coords
@@ -21,54 +57,58 @@ namespace {
 	// MSAA caret object (WPF apps e.g. Visual Studio editor, Office ...)
 	std::optional<RECT> GetCaretByMSAA(HWND hwnd) {
 		ComPtr<IAccessible> acc;
-		if (FAILED(AccessibleObjectFromWindow(hwnd, (DWORD)OBJID_CARET, IID_PPV_ARGS(&acc))) or !acc)
+		if (HRESULT hr = AccessibleObjectFromWindow(hwnd, (DWORD)OBJID_CARET, IID_PPV_ARGS(&acc)); FAILED(hr) or !acc) {
+			Trace(L"  MSAA : AccessibleObjectFromWindow hr={:#x}", (unsigned)hr);
 			return {};
+		}
 		long x{}, y{}, w{}, h{};
 		VARIANT self{ .vt = VT_I4 };
 		self.lVal = CHILDID_SELF;
-		if (FAILED(acc->accLocation(&x, &y, &w, &h, self)) or (x == 0 and y == 0 and w == 0 and h == 0))
+		HRESULT hr = acc->accLocation(&x, &y, &w, &h, self);
+		Trace(L"  MSAA : accLocation hr={:#x} x={} y={} w={} h={}", (unsigned)hr, x, y, w, h);
+		if (FAILED(hr) or (x == 0 and y == 0 and w == 0 and h == 0))
 			return {};
 		return RECT{ x, y, x + w, y + h };
 	}
 
-	// UI Automation TextPattern2 caret range (Chromium, Electron, UWP ...)
+	// UI Automation caret (Chromium, Electron, UWP, WPF ...)
 	std::optional<RECT> GetCaretByUIA() {
 		static ComPtr<IUIAutomation> s_uia = [] {
 			ComPtr<IUIAutomation> uia;
 			CoCreateInstance(__uuidof(CUIAutomation), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&uia));
 			return uia;
 		}();
-		if (!s_uia)
+		if (!s_uia) {
+			Trace(L"  UIA : no IUIAutomation");
 			return {};
-		ComPtr<IUIAutomationElement> focus;
-		if (FAILED(s_uia->GetFocusedElement(&focus)) or !focus)
-			return {};
-		// caret range : TextPattern2::GetCaretRange, or TextPattern selection (Visual Studio editor)
-		ComPtr<IUIAutomationTextRange> range;
-		if (ComPtr<IUIAutomationTextPattern2> text2;
-			SUCCEEDED(focus->GetCurrentPatternAs(UIA_TextPattern2Id, IID_PPV_ARGS(&text2))) and text2)
-		{
-			BOOL bActive{};
-			text2->GetCaretRange(&bActive, &range);
 		}
-		if (!range) {
-			ComPtr<IUIAutomationTextPattern> text;
-			if (FAILED(focus->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&text))) or !text)
-				return {};
-			ComPtr<IUIAutomationTextRangeArray> sels;
-			int count{};
-			if (FAILED(text->GetSelection(&sels)) or !sels or FAILED(sels->get_Length(&count)) or count <= 0)
-				return {};
-			if (FAILED(sels->GetElement(0, &range)) or !range)
-				return {};
-			// collapse to start (caret position)
-			range->MoveEndpointByRange(TextPatternRangeEndpoint_End, range.Get(), TextPatternRangeEndpoint_Start);
+		ComPtr<IUIAutomationElement> focus;
+		if (HRESULT hr = s_uia->GetFocusedElement(&focus); FAILED(hr) or !focus) {
+			Trace(L"  UIA : GetFocusedElement hr={:#x}", (unsigned)hr);
+			return {};
+		}
+		{
+			BSTR cls{}, name{}, fw{};
+			CONTROLTYPEID type{};
+			focus->get_CurrentClassName(&cls);
+			focus->get_CurrentName(&name);
+			focus->get_CurrentFrameworkId(&fw);
+			focus->get_CurrentControlType(&type);
+			std::wstring strName = name ? name : L"";
+			if (strName.size() > 40)
+				strName = strName.substr(0, 40) + L"...";
+			Trace(L"  UIA : focus class='{}' type={} framework='{}' name='{}'", cls ? cls : L"", type, fw ? fw : L"", strName);
+			SysFreeString(cls);
+			SysFreeString(name);
+			SysFreeString(fw);
 		}
 
 		auto getRect = [](IUIAutomationTextRange* r) -> std::optional<RECT> {
 			SAFEARRAY* rects{};
-			if (FAILED(r->GetBoundingRectangles(&rects)) or !rects)
+			if (HRESULT hr = r->GetBoundingRectangles(&rects); FAILED(hr) or !rects) {
+				Trace(L"    GetBoundingRectangles hr={:#x}", (unsigned)hr);
 				return {};
+			}
 			std::optional<RECT> result;
 			double* data{};
 			LONG ub{-1};
@@ -79,44 +119,92 @@ namespace {
 				SafeArrayUnaccessData(rects);
 			}
 			SafeArrayDestroy(rects);
+			Trace(L"    GetBoundingRectangles count={} rect={}", (ub + 1) / 4, ToStr(result));
 			return result;
 		};
 
-		if (auto rc = getRect(range.Get()))
-			return rc;
+		// rect of a degenerate (caret) range
+		auto caretRect = [&](IUIAutomationTextRange* range) -> std::optional<RECT> {
+			if (!range)
+				return {};
+			if (auto rc = getRect(range))
+				return rc;
 
-		// degenerate range has no rectangle in some providers : use the next (or previous) character
-		ComPtr<IUIAutomationTextRange> ch;
-		if (FAILED(range->Clone(&ch)) or !ch)
+			// degenerate range has no rectangle in some providers : use the next (or previous) character
+			ComPtr<IUIAutomationTextRange> ch;
+			int moved{};
+			if (SUCCEEDED(range->Clone(&ch)) and ch
+				and SUCCEEDED(ch->MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, 1, &moved)) and moved > 0)
+			{
+				Trace(L"   next char");
+				if (auto rc = getRect(ch.Get())) {
+					rc->right = rc->left;	// caret at left edge of next char
+					return rc;
+				}
+			}
+			if (SUCCEEDED(range->Clone(&ch)) and ch
+				and SUCCEEDED(ch->MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, -1, &moved)) and moved < 0)
+			{
+				Trace(L"   prev char");
+				if (auto rc = getRect(ch.Get())) {
+					rc->left = rc->right;	// caret at right edge of previous char
+					return rc;
+				}
+			}
 			return {};
-		int moved{};
-		ch->MoveEndpointByUnit(TextPatternRangeEndpoint_End, TextUnit_Character, 1, &moved);
-		if (moved > 0) {
-			if (auto rc = getRect(ch.Get())) {
-				rc->right = rc->left;	// caret at left edge of next char
-				return rc;
-			}
+		};
+
+		// 1. TextPattern2::GetCaretRange (exact caret position)
+		ComPtr<IUIAutomationTextPattern2> text2;
+		HRESULT hr = focus->GetCurrentPatternAs(UIA_TextPattern2Id, IID_PPV_ARGS(&text2));
+		Trace(L"  UIA : TextPattern2 hr={:#x} {}", (unsigned)hr, text2 ? L"supported" : L"not supported");
+		if (SUCCEEDED(hr) and text2) {
+			BOOL bActive{};
+			ComPtr<IUIAutomationTextRange> range;
+			hr = text2->GetCaretRange(&bActive, &range);
+			Trace(L"   GetCaretRange hr={:#x} active={} range={}", (unsigned)hr, bActive, range ? L"ok" : L"null");
+			if (SUCCEEDED(hr))
+				if (auto rc = caretRect(range.Get()))
+					return rc;
 		}
-		range->Clone(&ch);
-		ch->MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, -1, &moved);
-		if (moved < 0) {
-			if (auto rc = getRect(ch.Get())) {
-				rc->left = rc->right;	// caret at right edge of previous char
-				return rc;
-			}
-		}
-		return {};
+
+		// 2. TextPattern selection start (Visual Studio editor ...)
+		ComPtr<IUIAutomationTextPattern> text;
+		hr = focus->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&text));
+		Trace(L"  UIA : TextPattern hr={:#x} {}", (unsigned)hr, text ? L"supported" : L"not supported");
+		if (FAILED(hr) or !text)
+			return {};
+		ComPtr<IUIAutomationTextRangeArray> sels;
+		ComPtr<IUIAutomationTextRange> range;
+		int count{};
+		hr = text->GetSelection(&sels);
+		if (sels)
+			sels->get_Length(&count);
+		Trace(L"   GetSelection hr={:#x} count={}", (unsigned)hr, count);
+		if (FAILED(hr) or count <= 0 or FAILED(sels->GetElement(0, &range)) or !range)
+			return {};
+		range->MoveEndpointByRange(TextPatternRangeEndpoint_End, range.Get(), TextPatternRangeEndpoint_Start);	// collapse to start
+		return caretRect(range.Get());
 	}
 
-	std::optional<sCaretState> GetCaretState() {
+	std::optional<sCaretState> GetCaretStateImpl() {
 		HWND hwndFG = GetForegroundWindow();
-		if (!hwndFG)
+		if (!hwndFG) {
+			Trace(L"no foreground window");
 			return {};
-		DWORD tid = GetWindowThreadProcessId(hwndFG, nullptr);
+		}
+		DWORD pid{};
+		DWORD tid = GetWindowThreadProcessId(hwndFG, &pid);
 		GUITHREADINFO gti{ .cbSize = sizeof(gti) };
-		if (!GetGUIThreadInfo(tid, &gti))
+		if (!GetGUIThreadInfo(tid, &gti)) {
+			Trace(L"GetGUIThreadInfo failed. err={}", GetLastError());
 			return {};
+		}
 		HWND hwndFocus = gti.hwndFocus ? gti.hwndFocus : (gti.hwndCaret ? gti.hwndCaret : hwndFG);
+		RECT rcFG{};
+		GetWindowRect(hwndFG, &rcFG);
+		Trace(L"FG {} pid={} tid={} rect={}", WndStr(hwndFG), pid, tid, ToStr(rcFG));
+		Trace(L"  focus {}, caret {}, rcCaret(client)={}", WndStr(gti.hwndFocus), WndStr(gti.hwndCaret), ToStr(gti.rcCaret));
 
 		sCaretState state;
 		if (gti.hwndCaret) {
@@ -124,31 +212,52 @@ namespace {
 			ClientToScreen(gti.hwndCaret, &lt);
 			ClientToScreen(gti.hwndCaret, &rb);
 			state.rcCaret = { lt.x, lt.y, rb.x, rb.y };
+			Trace(L"  -> Win32 caret {}", ToStr(state.rcCaret));
 		}
 		else {
-			RECT rcFG{};
-			GetWindowRect(hwndFG, &rcFG);
 			auto isValid = [&](std::optional<RECT> const& rc) {
 				return rc and PtInRect(&rcFG, POINT{ rc->left, rc->bottom - 1 });
 			};
-			if (auto rc = GetCaretByMSAA(hwndFocus); isValid(rc))
+			auto rc = GetCaretByMSAA(hwndFocus);
+			if (isValid(rc)) {
 				state.rcCaret = *rc;
-			else if (auto rc = GetCaretByUIA(); isValid(rc))
+				Trace(L"  -> MSAA caret {}", ToStr(state.rcCaret));
+			}
+			else {
+				Trace(L"  MSAA rejected : {}", ToStr(rc));
+				rc = GetCaretByUIA();
+				if (!isValid(rc)) {
+					Trace(L"  -> no caret (UIA {})", ToStr(rc));
+					return {};
+				}
 				state.rcCaret = *rc;
-			else
-				return {};
+				Trace(L"  -> UIA caret {}", ToStr(state.rcCaret));
+			}
 		}
 
 		// Korean keyboard layout + native (Hangul) conversion mode
 		auto langID = LOWORD((UINT_PTR)GetKeyboardLayout(tid));
 		if (PRIMARYLANGID(langID) == LANG_KOREAN) {
-			if (HWND hwndIME = ImmGetDefaultIMEWnd(hwndFocus)) {
+			HWND hwndIME = ImmGetDefaultIMEWnd(hwndFocus);
+			DWORD_PTR mode{};
+			LRESULT ok{};
+			if (hwndIME) {
 				constexpr WPARAM IMC_GETCONVERSIONMODE = 0x0001;
-				DWORD_PTR mode{};
-				if (SendMessageTimeoutW(hwndIME, WM_IME_CONTROL, IMC_GETCONVERSIONMODE, 0, SMTO_ABORTIFHUNG, 50, &mode))
+				ok = SendMessageTimeoutW(hwndIME, WM_IME_CONTROL, IMC_GETCONVERSIONMODE, 0, SMTO_ABORTIFHUNG, 50, &mode);
+				if (ok)
 					state.bKorean = (mode & IME_CMODE_NATIVE) != 0;
 			}
+			Trace(L"  IME lang={:#06x} imeWnd={} ok={} mode={:#x} -> {}", langID, WndStr(hwndIME), ok != 0, (unsigned)mode,
+				state.bKorean ? L"Korean" : L"English");
 		}
+		else
+			Trace(L"  IME lang={:#06x} (not Korean)", langID);
+		return state;
+	}
+
+	std::optional<sCaretState> GetCaretState() {
+		auto state = GetCaretStateImpl();
+		FlushTrace();
 		return state;
 	}
 
@@ -195,6 +304,10 @@ void xImeIndicator::SetShowEnglish(bool bShow) {
 	m_bShowEnglish = bShow;
 }
 
+void xImeIndicator::SetBoxSize(int px) {
+	m_size = std::clamp(px, 4, 32);
+}
+
 void xImeIndicator::OnTimer() {
 	auto state = GetCaretState();
 	if (!state or (!state->bKorean and !m_bShowEnglish)) {
@@ -213,8 +326,7 @@ void xImeIndicator::OnTimer() {
 
 	// position in physical pixels (avoid Qt DPI mapping across monitors)
 	auto hwnd = (HWND)winId();
-	int size = qRound(20 * devicePixelRatioF());
-	SetWindowPos(hwnd, HWND_TOPMOST, state->rcCaret.left + m_offset.x(), state->rcCaret.bottom + m_offset.y(), size, size,
+	SetWindowPos(hwnd, HWND_TOPMOST, state->rcCaret.left + m_offset.x(), state->rcCaret.bottom + m_offset.y(), m_size, m_size,
 		SWP_NOACTIVATE | SWP_SHOWWINDOW);
 }
 
@@ -225,7 +337,10 @@ void xImeIndicator::paintEvent(QPaintEvent*) {
 	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setPen(Qt::NoPen);
 	painter.setBrush(m_background);
-	painter.drawRoundedRect(rect(), 3, 3);
+	auto radius = std::min(3.0, height() / 4.0);
+	painter.drawRoundedRect(rect(), radius, radius);
+	if (height() < 8)	// too small for text : color box only
+		return;
 
 	QFont font("Malgun Gothic");
 	font.setPixelSize(height() * 3 / 4);

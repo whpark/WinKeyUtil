@@ -16,12 +16,14 @@ public:
 	void SetOffset(QPoint const& offset);	// relative to caret (bottom-left), physical pixels
 	void SetInterval(int ms);	// 10 ~ 10000
 	void SetShowEnglish(bool bShow);
+	void SetBoxSize(int px);	// 4 ~ 32, physical pixels
 
 protected:
 	QTimer m_timer;
 	QColor m_background{0, 0, 128};
 	QPoint m_offset{0, 2};
 	bool m_bShowEnglish{true};
+	int m_size{20};
 	std::optional<bool> m_bKorean;	// nullopt : hidden
 
 	void OnTimer();

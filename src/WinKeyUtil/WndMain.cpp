@@ -49,6 +49,7 @@ xWndMain::xWndMain(QWidget* parent) : QMainWindow(parent) {
 	connect(ui.spinImeInterval, &QSpinBox::valueChanged, this, applyIme);
 	connect(ui.spinImeX, &QSpinBox::valueChanged, this, applyIme);
 	connect(ui.spinImeY, &QSpinBox::valueChanged, this, applyIme);
+	connect(ui.spinImeSize, &QSpinBox::valueChanged, this, applyIme);
 	connect(ui.btnImeColor, &QPushButton::clicked, this, [this, applyIme] {
 		auto color = QColorDialog::getColor(m_colorIme, this, "IME Indicator Background");
 		if (!color.isValid())
@@ -121,7 +122,7 @@ void xWndMain::LoadSettings() {
 	m_timerGenerator.setInterval(ui.spinInterval->value() * 1000);
 
 	QSignalBlocker b7(ui.chkImeIndicator), b8(ui.spinImeOpacity), b9(ui.spinImeInterval), b10(ui.spinImeX), b11(ui.spinImeY);
-	QSignalBlocker b12(ui.chkImeShowEnglish);
+	QSignalBlocker b12(ui.chkImeShowEnglish), b13(ui.spinImeSize);
 	ui.chkImeIndicator->setChecked(m_reg.value("ime/Enabled", true).toBool());
 	ui.chkImeShowEnglish->setChecked(m_reg.value("ime/ShowEnglish", true).toBool());
 	m_colorIme = QColor::fromString(m_reg.value("ime/Background", "#000080").toString());
@@ -131,6 +132,7 @@ void xWndMain::LoadSettings() {
 	ui.spinImeInterval->setValue(m_reg.value("ime/Interval", 100).toInt());
 	ui.spinImeX->setValue(m_reg.value("ime/OffsetX", 0).toInt());
 	ui.spinImeY->setValue(m_reg.value("ime/OffsetY", 2).toInt());
+	ui.spinImeSize->setValue(m_reg.value("ime/Size", 20).toInt());
 }
 
 void xWndMain::SaveSettings() {
@@ -151,6 +153,7 @@ void xWndMain::SaveSettings() {
 	m_reg.setValue("ime/Interval", ui.spinImeInterval->value());
 	m_reg.setValue("ime/OffsetX", ui.spinImeX->value());
 	m_reg.setValue("ime/OffsetY", ui.spinImeY->value());
+	m_reg.setValue("ime/Size", ui.spinImeSize->value());
 }
 
 void xWndMain::ApplyImeIndicator() {
@@ -161,6 +164,7 @@ void xWndMain::ApplyImeIndicator() {
 	m_ime.SetInterval(ui.spinImeInterval->value());
 	m_ime.SetShowEnglish(ui.chkImeShowEnglish->isChecked());
 	m_ime.SetOffset({ ui.spinImeX->value(), ui.spinImeY->value() });
+	m_ime.SetBoxSize(ui.spinImeSize->value());
 	m_ime.SetEnabled(ui.chkImeIndicator->isChecked());
 }
 

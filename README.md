@@ -15,8 +15,12 @@ Keyboard utility living in the system tray (successor of KeyVolume, rewritten wi
 * Wake on LAN
 	- R-Ctrl + R-Shift + R-Alt + '\'
 
-* Key Generator (keeps PC awake)
-	- R-Ctrl + R-Shift + R-Alt + '[' / ']' : on / off. Sends VolDn key when idle for the given interval.
+* IME Indicator
+	- Shows the IME state next to the text caret of the foreground window : 'ㅎ' (Korean) / 'A' (English)
+	- Option to show only in Korean mode (hide 'A')
+	- Settings : background color, opacity (5 ~ 100 %), size (4 ~ 32 px), offset X / Y from caret (px), polling interval (10 ~ 10,000 ms)
+	- Caret detection : Win32 caret -> MSAA (OBJID_CARET) -> UI Automation (TextPattern2 caret range / TextPattern selection)
+	- Diagnostic trace is written to OutputDebugString with '[ImeIndicator]' prefix (view with DebugView)
 
 Qt is used for UI only. Hook, receiver and WOL logic are plain C++ / Win32.
 

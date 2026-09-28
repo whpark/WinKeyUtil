@@ -226,10 +226,33 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0" colspan="4">
+       <item row="1" column="0" colspan="4">
         <widget class="QCheckBox" name="chkImeShowEnglish">
          <property name="text">
           <string>Show also in English mode (A)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="lblImeSize">
+         <property name="text">
+          <string>Size</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QSpinBox" name="spinImeSize">
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+         </property>
+         <property name="suffix">
+          <string> px</string>
+         </property>
+         <property name="minimum">
+          <number>4</number>
+         </property>
+         <property name="maximum">
+          <number>32</number>
          </property>
         </widget>
        </item>
@@ -243,14 +266,14 @@
        <item row="0" column="3">
         <widget class="QPushButton" name="btnImeColor"/>
        </item>
-       <item row="1" column="0">
+       <item row="2" column="2">
         <widget class="QLabel" name="lblImeOpacity">
          <property name="text">
           <string>Opacity</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="3">
         <widget class="QSpinBox" name="spinImeOpacity">
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -269,14 +292,14 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
+       <item row="4" column="0">
         <widget class="QLabel" name="lblImeInterval">
          <property name="text">
           <string>Polling</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="3">
+       <item row="4" column="1">
         <widget class="QSpinBox" name="spinImeInterval">
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -295,14 +318,14 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="lblImeX">
          <property name="text">
           <string>Offset X</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <widget class="QSpinBox" name="spinImeX">
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -315,14 +338,14 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="2">
+       <item row="3" column="2">
         <widget class="QLabel" name="lblImeY">
          <property name="text">
           <string>Offset Y</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="3">
+       <item row="3" column="3">
         <widget class="QSpinBox" name="spinImeY">
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -380,6 +403,33 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>chkVolumeKey</tabstop>
+  <tabstop>chkAutoShift</tabstop>
+  <tabstop>spinMinRepeat</tabstop>
+  <tabstop>chkMouseJump</tabstop>
+  <tabstop>chkReceiver</tabstop>
+  <tabstop>edtHost</tabstop>
+  <tabstop>cmbZone</tabstop>
+  <tabstop>btnVolumeUp</tabstop>
+  <tabstop>btnVolumeDown</tabstop>
+  <tabstop>btnPowerOn</tabstop>
+  <tabstop>btnPowerOff</tabstop>
+  <tabstop>edtMAC</tabstop>
+  <tabstop>btnWakeUp</tabstop>
+  <tabstop>edtBroadcast</tabstop>
+  <tabstop>chkGenerate</tabstop>
+  <tabstop>spinInterval</tabstop>
+  <tabstop>chkImeIndicator</tabstop>
+  <tabstop>btnImeColor</tabstop>
+  <tabstop>chkImeShowEnglish</tabstop>
+  <tabstop>spinImeSize</tabstop>
+  <tabstop>spinImeOpacity</tabstop>
+  <tabstop>spinImeX</tabstop>
+  <tabstop>spinImeY</tabstop>
+  <tabstop>spinImeInterval</tabstop>
+  <tabstop>btnQuit</tabstop>
+ </tabstops>
  <resources>
   <include location="WndMain.qrc"/>
  </resources>
