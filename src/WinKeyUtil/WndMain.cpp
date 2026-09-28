@@ -39,7 +39,18 @@ xWndMain::xWndMain(QWidget* parent) : QMainWindow(parent) {
 		m_timerGenerator.setInterval(sec * 1000);
 		SaveSettings();
 	});
-	connect(&m_timerGenerator, &QTimer::timeout, this, [] { keyhook::SendKey(VK_VOLUME_DOWN, 0); });
+	connect(&m_timerGenerator, &QTimer::timeout, this, [this] {
+		bool bLocked = IsWindowsLocked();
+	#ifdef _DEBUG
+		auto t = std::chrono::system_clock::now();
+		auto t0 = std::chrono::current_zone()->to_local(t);
+		OutputDebugStringA(std::format("{} : -- {} --\r\n", t0, bLocked ? "Locked" : "unlocked").c_str());
+	#endif
+		if (bLocked) {
+			return;
+		}
+		keyhook::SendKey(VK_VOLUME_DOWN, 0);
+	});
 
 	// IME Indicator
 	auto applyIme = [this] { ApplyImeIndicator(); SaveSettings(); };
@@ -258,6 +269,17 @@ void xWndMain::Quit() {
 	m_bQuit = true;
 	close();
 	qApp->quit();
+}
+
+bool xWndMain::IsWindowsLocked() {
+	WTSINFOEXW* info{};
+	DWORD size{};
+	if (WTSQuerySessionInformationW(WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION, WTSSessionInfoEx, (LPWSTR*)&info, &size)) {
+		bool bLocked = info->Data.WTSInfoExLevel1.SessionFlags == WTS_SESSIONSTATE_LOCK;
+		WTSFreeMemory(info);
+		return bLocked;
+	}
+	return false;
 }
 
 void xWndMain::closeEvent(QCloseEvent* event) {

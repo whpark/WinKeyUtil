@@ -44,5 +44,8 @@ protected:
 	void ShowAndActivate();
 	void Quit();
 
+	bool IsWindowsLocked();
+
 	void closeEvent(QCloseEvent* event) override;
 };
+
