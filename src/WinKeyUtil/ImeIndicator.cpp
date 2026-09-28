@@ -13,6 +13,7 @@ namespace {
 	using Microsoft::WRL::ComPtr;
 
 	// Diagnostics : trace of one poll. written to OutputDebugString (DebugView / VS Output) only when changed
+	// used only on the worker thread (xImeIndicator::m_worker)
 #ifdef _DEBUG
 	std::wstring g_trace;
 #endif
@@ -48,11 +49,7 @@ namespace {
 		return std::format(L"{:#x} '{}'", (UINT_PTR)hwnd, buf);
 	}
 
-	// IME state of the foreground thread. nullopt : no caret
-	struct sCaretState {
-		RECT rcCaret{};	// screen coords
-		bool bKorean{};
-	};
+	using sCaretState = xImeIndicator::sCaretState;
 
 	// MSAA caret object (WPF apps e.g. Visual Studio editor, Office ...)
 	std::optional<RECT> GetCaretByMSAA(HWND hwnd) {
@@ -73,7 +70,8 @@ namespace {
 
 	// UI Automation caret (Chromium, Electron, UWP, WPF ...)
 	std::optional<RECT> GetCaretByUIA() {
-		static ComPtr<IUIAutomation> s_uia = [] {
+		// per worker thread : released before CoUninitialize
+		thread_local ComPtr<IUIAutomation> s_uia = [] {
 			ComPtr<IUIAutomation> uia;
 			CoCreateInstance(__uuidof(CUIAutomation), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&uia));
 			return uia;
@@ -309,7 +307,27 @@ void xImeIndicator::SetBoxSize(int px) {
 }
 
 void xImeIndicator::OnTimer() {
-	auto state = GetCaretState();
+	// skip if previous query is still running (target app not responding ...)
+	if (m_bBusy.exchange(true))
+		return;
+	m_worker.Push([this] {
+		// COM (MTA) for MSAA / UIA on this worker thread
+		thread_local struct sComInit {
+			HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+			~sComInit() { if (SUCCEEDED(hr)) CoUninitialize(); }
+		} s_com;
+		auto state = GetCaretState();
+		// dropped by Qt if 'this' is destroyed
+		QMetaObject::invokeMethod(this, [this, state] {
+			m_bBusy = false;
+			OnCaretState(state);
+		}, Qt::QueuedConnection);
+	});
+}
+
+void xImeIndicator::OnCaretState(std::optional<sCaretState> const& state) {
+	if (!m_timer.isActive())	// disabled while querying
+		return;
 	if (!state or (!state->bKorean and !m_bShowEnglish)) {
 		if (isVisible())
 			hide();

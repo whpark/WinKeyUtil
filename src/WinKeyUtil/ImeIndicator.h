@@ -2,6 +2,8 @@
 
 #include <QtWidgets/QWidget>
 #include <QtCore/QTimer>
+#include <atomic>
+#include "TaskQueue.h"
 
 // Shows IME state ("ㅎ" : Korean, "A" : English) next to the caret of the foreground window
 class xImeIndicator : public QWidget {
@@ -18,6 +20,12 @@ public:
 	void SetShowEnglish(bool bShow);
 	void SetBoxSize(int px);	// 4 ~ 32, physical pixels
 
+	// caret position and IME state of the foreground thread
+	struct sCaretState {
+		RECT rcCaret{};	// screen coords
+		bool bKorean{};
+	};
+
 protected:
 	QTimer m_timer;
 	QColor m_background{0, 0, 128};
@@ -25,7 +33,10 @@ protected:
 	bool m_bShowEnglish{true};
 	int m_size{20};
 	std::optional<bool> m_bKorean;	// nullopt : hidden
+	std::atomic_bool m_bBusy{};	// query is running on m_worker
+	xTaskQueue m_worker;	// caret / IME query (MSAA, UIA calls may block). last member : joined first
 
 	void OnTimer();
+	void OnCaretState(std::optional<sCaretState> const& state);
 	void paintEvent(QPaintEvent* event) override;
 };
