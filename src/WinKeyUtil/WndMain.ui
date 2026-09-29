@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>382</width>
-    <height>655</height>
+    <height>716</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -187,7 +187,7 @@
     <item>
      <widget class="QGroupBox" name="grpGenerator">
       <property name="title">
-       <string>Key Generator (R-Ctrl + R-Shift + R-Alt + [ / ])</string>
+       <string>Keep Volume Down (R-Ctrl + R-Shift + R-Alt + [ / ])</string>
       </property>
       <layout class="QHBoxLayout" name="layoutGenerator">
        <item>
@@ -216,7 +216,7 @@
     <item>
      <widget class="QGroupBox" name="grpIme">
       <property name="title">
-       <string>IME Indicator (ㅎ / A near caret)</string>
+       <string>IME Indicator ( 'ㅎ' or 'A' near caret)</string>
       </property>
       <layout class="QGridLayout" name="layoutIme">
        <item row="0" column="0" colspan="2">
