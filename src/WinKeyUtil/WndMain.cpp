@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "WndMain.h"
 #include "WOL.h"
+#include "DlgAbout.h"
 
 using namespace std::literals;
 
@@ -70,6 +71,7 @@ xWndMain::xWndMain(QWidget* parent) : QMainWindow(parent) {
 	});
 	ApplyImeIndicator();
 
+	connect(ui.btnAbout, &QPushButton::clicked, this, &xWndMain::ShowAbout);
 	connect(ui.btnQuit, &QPushButton::clicked, this, &xWndMain::Quit);
 
 	// Tray
@@ -86,6 +88,7 @@ xWndMain::xWndMain(QWidget* parent) : QMainWindow(parent) {
 	connect(menu, &QMenu::aboutToShow, this, [this, actAutoShift] { actAutoShift->setChecked(ui.chkAutoShift->isChecked()); });
 	connect(actAutoShift, &QAction::triggered, ui.chkAutoShift, &QCheckBox::setChecked);
 	menu->addSeparator();
+	menu->addAction("About...", this, &xWndMain::ShowAbout);
 	menu->addAction("Quit", this, &xWndMain::Quit);
 	m_tray.setIcon(windowIcon());
 	m_tray.setToolTip("WinKeyUtil");
@@ -263,6 +266,11 @@ void xWndMain::ShowAndActivate() {
 	showNormal();
 	raise();
 	activateWindow();
+}
+
+void xWndMain::ShowAbout() {
+	xDlgAbout dlg(this);
+	dlg.exec();
 }
 
 void xWndMain::Quit() {

@@ -66,6 +66,16 @@
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>"$(QtInstallDir)\bin\windeployqt.exe" --no-translations --no-system-d3d-compiler --no-opengl-sw --skip-plugin-types generic,networkinformation,tls --exclude-plugins qpdf,qgif,qicns,qjpeg,qtga,qtiff,qwbmp,qwebp "$(TargetPath)"
+if errorlevel 1 exit /b 1
+xcopy /y /q "$(ProjectDir)..\..\LICENSE.txt" "$(OutDir)"
+xcopy /y /q "$(ProjectDir)..\..\THIRD_PARTY_NOTICES.txt" "$(OutDir)"
+xcopy /y /q /i "$(ProjectDir)..\..\licenses\*.txt" "$(OutDir)licenses\"</Command>
+      <Message>Deploy Qt (windeployqt), copy license files (MIT, third party notices, LGPLv3 / GPLv3 for Qt)</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp23</LanguageStandard>
@@ -130,12 +140,17 @@
     <QtMoc Include="WndMain.h" />
     <QtMoc Include="NotifyBox.h" />
     <QtMoc Include="ImeIndicator.h" />
+    <ClInclude Include="DlgAbout.h" />
+    <ClInclude Include="Version.h" />
+    <ResourceCompile Include="WinKeyUtil.rc" />
+    <Image Include="res\WinKeyUtil.ico" />
     <ClInclude Include="KeyHook.h" />
     <ClInclude Include="Receiver.h" />
     <ClInclude Include="TaskQueue.h" />
     <ClCompile Include="WndMain.cpp" />
     <ClCompile Include="NotifyBox.cpp" />
     <ClCompile Include="ImeIndicator.cpp" />
+    <ClCompile Include="DlgAbout.cpp" />
     <ClCompile Include="KeyHook.cpp" />
     <ClCompile Include="Receiver.cpp" />
     <ClCompile Include="main.cpp" />

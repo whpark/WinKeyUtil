@@ -390,6 +390,13 @@
        </spacer>
       </item>
       <item>
+       <widget class="QPushButton" name="btnAbout">
+        <property name="text">
+         <string>About</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btnQuit">
         <property name="text">
          <string>Quit</string>
@@ -428,6 +435,7 @@
   <tabstop>spinImeX</tabstop>
   <tabstop>spinImeY</tabstop>
   <tabstop>spinImeInterval</tabstop>
+  <tabstop>btnAbout</tabstop>
   <tabstop>btnQuit</tabstop>
  </tabstops>
  <resources>

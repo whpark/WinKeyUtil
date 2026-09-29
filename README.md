@@ -27,3 +27,12 @@ Qt is used for UI only. Hook, receiver and WOL logic are plain C++ / Win32.
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt).
+
+Third party software (see [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)) :
+
+* [Qt](https://www.qt.io/) - LGPLv3, dynamically linked (unmodified)
+* [Asio](https://think-async.com/Asio/) - Boost Software License 1.0
+
+When distributing binaries, include LICENSE.txt, THIRD_PARTY_NOTICES.txt and the LGPLv3 / GPLv3 license texts
+([licenses/](licenses)) alongside the Qt DLLs, so that users can replace the Qt libraries.
+The post-build step copies these files into the output folder (`licenses\` subfolder for LGPL / GPL).

@@ -42,6 +42,7 @@ protected:
 	void SetGenerator(bool bOn);
 	void ApplyImeIndicator();
 	void ShowAndActivate();
+	void ShowAbout();
 	void Quit();
 
 	bool IsWindowsLocked();

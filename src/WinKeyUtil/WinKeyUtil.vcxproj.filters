@@ -55,6 +55,9 @@
     <ClCompile Include="ImeIndicator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DlgAbout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="KeyHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,6 +69,18 @@
     <ClInclude Include="WOL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DlgAbout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ResourceCompile Include="WinKeyUtil.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <Image Include="res\WinKeyUtil.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
     <ClInclude Include="KeyHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
