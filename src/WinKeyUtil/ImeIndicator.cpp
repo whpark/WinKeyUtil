@@ -68,8 +68,21 @@ namespace {
 		return RECT{ x, y, x + w, y + h };
 	}
 
-	// UI Automation caret (Chromium, Electron, UWP, WPF ...)
-	std::optional<RECT> GetCaretByUIA() {
+	// Win32 : disabled window, or read-only Edit / RichEdit control
+	bool IsReadOnlyByStyle(HWND hwnd) {
+		if (!hwnd)
+			return false;
+		if (!IsWindowEnabled(hwnd))
+			return true;
+		wchar_t cls[64]{};
+		GetClassNameW(hwnd, cls, (int)std::size(cls));
+		if (_wcsicmp(cls, L"Edit") == 0 or _wcsnicmp(cls, L"RichEdit", 8) == 0 or _wcsnicmp(cls, L"RICHEDIT", 8) == 0)
+			return (GetWindowLongPtrW(hwnd, GWL_STYLE) & ES_READONLY) != 0;
+		return false;
+	}
+
+	// UI Automation focused element
+	ComPtr<IUIAutomationElement> GetFocusByUIA() {
 		// per worker thread : released before CoUninitialize
 		thread_local ComPtr<IUIAutomation> s_uia = [] {
 			ComPtr<IUIAutomation> uia;
@@ -85,6 +98,60 @@ namespace {
 			Trace(L"  UIA : GetFocusedElement hr={:#x}", (unsigned)hr);
 			return {};
 		}
+		return focus;
+	}
+
+	// UI Automation : focused element is disabled / read-only. unknown -> false (editable)
+	bool IsReadOnlyByUIA(IUIAutomationElement* focus) {
+		if (!focus)
+			return false;
+		if (BOOL bEnabled{TRUE}; SUCCEEDED(focus->get_CurrentIsEnabled(&bEnabled)) and !bEnabled) {
+			Trace(L"  UIA : disabled");
+			return true;
+		}
+		// ValuePattern (edit box, web document ...)
+		if (ComPtr<IUIAutomationValuePattern> value;
+			SUCCEEDED(focus->GetCurrentPatternAs(UIA_ValuePatternId, IID_PPV_ARGS(&value))) and value)
+		{
+			BOOL bReadOnly{};
+			if (SUCCEEDED(value->get_CurrentIsReadOnly(&bReadOnly))) {
+				Trace(L"  UIA : ValuePattern IsReadOnly={}", bReadOnly);
+				return bReadOnly;
+			}
+		}
+		// text attribute at the caret (rich text / code editor)
+		ComPtr<IUIAutomationTextRange> range;
+		if (ComPtr<IUIAutomationTextPattern2> text2;
+			SUCCEEDED(focus->GetCurrentPatternAs(UIA_TextPattern2Id, IID_PPV_ARGS(&text2))) and text2)
+		{
+			BOOL bActive{};
+			text2->GetCaretRange(&bActive, &range);
+		}
+		if (!range) {
+			ComPtr<IUIAutomationTextPattern> text;
+			ComPtr<IUIAutomationTextRangeArray> sels;
+			int count{};
+			if (SUCCEEDED(focus->GetCurrentPatternAs(UIA_TextPatternId, IID_PPV_ARGS(&text))) and text
+				and SUCCEEDED(text->GetSelection(&sels)) and sels and SUCCEEDED(sels->get_Length(&count)) and count > 0)
+				sels->GetElement(0, &range);
+		}
+		if (range) {
+			VARIANT v{};
+			VariantInit(&v);
+			if (SUCCEEDED(range->GetAttributeValue(UIA_IsReadOnlyAttributeId, &v))) {
+				bool bReadOnly = v.vt == VT_BOOL and v.boolVal != VARIANT_FALSE;	// mixed / not supported (VT_UNKNOWN) : editable
+				Trace(L"  UIA : IsReadOnlyAttribute vt={} -> {}", v.vt, bReadOnly);
+				VariantClear(&v);
+				return bReadOnly;
+			}
+		}
+		return false;
+	}
+
+	// UI Automation caret (Chromium, Electron, UWP, WPF ...)
+	std::optional<RECT> GetCaretByUIA(IUIAutomationElement* focus) {
+		if (!focus)
+			return {};
 		{
 			BSTR cls{}, name{}, fw{};
 			CONTROLTYPEID type{};
@@ -211,25 +278,38 @@ namespace {
 			ClientToScreen(gti.hwndCaret, &rb);
 			state.rcCaret = { lt.x, lt.y, rb.x, rb.y };
 			Trace(L"  -> Win32 caret {}", ToStr(state.rcCaret));
+			if (IsReadOnlyByStyle(hwndFocus)) {
+				Trace(L"  -> read-only (style)");
+				return {};
+			}
 		}
 		else {
+			if (IsReadOnlyByStyle(hwndFocus)) {
+				Trace(L"  -> read-only (style)");
+				return {};
+			}
 			auto isValid = [&](std::optional<RECT> const& rc) {
 				return rc and PtInRect(&rcFG, POINT{ rc->left, rc->bottom - 1 });
 			};
 			auto rc = GetCaretByMSAA(hwndFocus);
+			auto focus = GetFocusByUIA();
 			if (isValid(rc)) {
 				state.rcCaret = *rc;
 				Trace(L"  -> MSAA caret {}", ToStr(state.rcCaret));
 			}
 			else {
 				Trace(L"  MSAA rejected : {}", ToStr(rc));
-				rc = GetCaretByUIA();
+				rc = GetCaretByUIA(focus.Get());
 				if (!isValid(rc)) {
 					Trace(L"  -> no caret (UIA {})", ToStr(rc));
 					return {};
 				}
 				state.rcCaret = *rc;
 				Trace(L"  -> UIA caret {}", ToStr(state.rcCaret));
+			}
+			if (IsReadOnlyByUIA(focus.Get())) {
+				Trace(L"  -> read-only (UIA)");
+				return {};
 			}
 		}
 
